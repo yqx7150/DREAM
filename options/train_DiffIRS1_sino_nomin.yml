@@ -1,0 +1,146 @@
+# general settings
+
+name: train_DiffIRS1_mask10
+model_type: DiffIRS1Model
+scale: 1
+num_gpu: auto  # auto: can infer from your visible devices automatically. official: 8 GPUs
+manual_seed: 0
+
+# dataset and data loader settings
+datasets:
+  train:
+    name: TrainSet
+    # type: DeblurPairedDataset
+    type: LQGTDataset_sino_nomin_mask
+    dataroot_GT: path
+    dataroot_LQ: path
+    geometric_augs: true
+
+    filename_tmpl: '{}'
+    io_backend:
+      type: disk
+
+
+    num_worker_per_gpu: 12
+    #############################################sino v1
+    batch_size_per_gpu: 8
+    mini_batch_sizes: [8, 4, 2, 2]             # Batch size per gpu   
+    iters: [120000,100000,100000,80000]
+    gt_size: 256   # Max Image size for progressive training
+    gt_sizes: [64, 128, 192, 256]  # Image sizes for progressive training.
+    #############################################
+    #############################################sino v2
+    # batch_size_per_gpu: 2
+    # mini_batch_sizes: [2]             # Batch size per gpu   
+    # iters: [400000]
+    # gt_size: 256   # Max Image size for progressive training
+    # gt_sizes: [256]  # Image sizes for progressive training.
+    #############################################
+    #############################################wt
+    # batch_size_per_gpu: 4
+    # mini_batch_sizes: [4]             # Batch size per gpu   
+    # iters: [400000]
+    # gt_size: 144   # Max Image size for progressive training
+    # gt_sizes: [144]  # Image sizes for progressive training.
+    #############################################
+
+    # data loader
+    use_shuffle: true
+    dataset_enlarge_ratio: 1
+    prefetch_mode: ~
+    # LR_sizex: 267
+    # LR_sizey: 288
+    # GT_sizex: 267
+    # GT_sizey: 288
+    data_type: img
+
+  # Uncomment these for validation
+  val:
+    name: ValSet
+    type: LQGTDataset_sino_nomin_mask
+    dataroot_GT: path
+    dataroot_LQ: path
+    io_backend:
+      type: disk
+    # LR_sizex: 267
+    # LR_sizey: 288
+    # GT_sizex: 267
+    # GT_sizey: 288
+    data_type: img
+
+# network structures
+network_g:
+  type: DiffIRS1
+  n_encoder_res: 5
+  inp_channels: 3
+  out_channels: 3
+  dim: 48
+  num_blocks: [3,5,6,6]
+  num_refinement_blocks: 4
+  heads: [1,2,4,8]
+  ffn_expansion_factor: 2
+  bias: False
+  LayerNorm_type: WithBias
+
+# path
+path:
+  pretrain_network_g: ~
+  param_key_g: params_ema
+  strict_load_g: true
+  resume_state: ~ 
+
+# training settings
+train:
+  ema_decay: 0.999
+
+  optim_g:
+    type: Adam
+    lr: !!float 2e-4
+    weight_decay: 0
+    betas: [0.9, 0.999]
+
+  scheduler:
+    type: CosineAnnealingRestartCyclicLR
+    periods: [120000, 280000]       
+    restart_weights: [1,1]
+    eta_mins: [0.000285,0.000001]  
+
+  total_iter: 400000
+  warmup_iter: -1  # no warm up
+
+  mixing_augs:
+    mixup: false
+    mixup_beta: 1.2
+    use_identity: true
+
+  # losses
+  pixel_opt:
+    type: L1Loss
+    loss_weight: 1.0
+    reduction: mean
+
+# Uncomment these for validation
+# validation settings
+val:
+  val_freq: !!float 5e3
+  save_img: False
+
+  metrics:
+    psnr: # metric name
+      type: calculate_psnr
+      crop_border: 0
+      test_y_channel: false
+
+# logging settings
+logger:
+  print_freq: 100
+  save_checkpoint_freq: !!float 5e3
+  use_tb_logger: true
+  wandb:
+    project: ~
+    resume_id: ~
+
+# dist training settings
+dist_params:
+  backend: nccl
+  port: 29500

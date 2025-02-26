@@ -1,0 +1,89 @@
+# general settings
+name: test_DiffIRS2
+model_type: DiffIRS2Model
+scale: 4
+num_gpu: auto  # auto: can infer from your visible devices automatically. official: 4 GPUs
+manual_seed: 0
+
+
+# dataset and data loader settings
+datasets:
+  # Uncomment these for validation
+  test:
+    name: GoPro
+    type: LQGTDataset_sino_nomin_mask
+    dataroot_GT: path
+    dataroot_LQ: path
+    io_backend:
+      type: disk
+    # LR_sizex: 267
+    # LR_sizey: 288
+    # GT_sizex: 267
+    # GT_sizey: 288
+    data_type: img
+
+  # val_2:
+  #   name: HIDE
+  #   type: DeblurPairedDataset
+  #   dataroot_gt: /root/motion_deblur/test/HIDE/target
+  #   dataroot_lq: /root/motion_deblur/test/HIDE/input
+  #   io_backend:
+  #     type: disk
+
+
+# network structures
+network_g:
+  type: DiffIRS2
+  n_encoder_res: 5
+  inp_channels: 3
+  out_channels: 3
+  dim: 48
+  num_blocks: [3,5,6,6]
+  num_refinement_blocks: 4
+  heads: [1,2,4,8]
+  ffn_expansion_factor: 2
+  bias: False
+  LayerNorm_type: WithBias
+  n_denoise_res: 1
+  linear_start: 0.1
+  linear_end: 0.99
+  timesteps: 4
+
+# network structures
+network_S1:
+  type: DiffIRS1
+  n_encoder_res: 5
+  inp_channels: 3
+  out_channels: 3
+  dim: 48
+  num_blocks: [3,5,6,6]
+  num_refinement_blocks: 4
+  heads: [1,2,4,8]
+  ffn_expansion_factor: 2
+  bias: False
+  LayerNorm_type: WithBias
+
+# path
+path:
+  # use the pre-trained Real-ESRNet model
+
+  pretrain_network_g: experiments_sino/~.pth
+  pretrain_network_S1: experiments_sino/~.pth
+  param_key_g: params_ema
+  strict_load_g: False
+  ignore_resume_networks: network_S1
+
+
+
+val:
+  save_img: True
+  suffix: ~  # add suffix to saved images, if None, use exp name
+
+  metrics:
+    psnr: # metric name
+      type: calculate_psnr
+      crop_border: 0
+      test_y_channel: False
+
+
+
