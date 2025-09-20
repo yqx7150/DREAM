@@ -55,6 +55,8 @@ sh test.sh
 
 * Diffusion Transformer Model with Compact Prior for Low-dose PET Reconstruction [<font size=5>**[Paper]**</font>](https://arxiv.org/abs/2407.00944)     [<font size=5>**[Code]**</font>](https://github.com/yqx7150/dtm)
 
+* RED: Residual Estimation Diffusion for Low-Dose PET Sinogram Reconstruction  [<font size=5>**[Paper]**</font>](https://www.sciencedirect.com/science/article/pii/S1361841525001057)       [<font size=5>**[Code]**</font>](https://github.com/yqx7150/RED)    
+      
 * PET Tracer Separation using Conditional Diffusion Transformer with Multi-latent Space Learning [<font size=5>**[Paper]**</font>](https://arxiv.org/abs/2506.16934#:~:text=In%20this%20study%2C%20a%20multi-latent%20space%20guided%20texture,model%20%28MS-CDT%29%20is%20proposed%20for%20PET%20tracer%20separation.)
 
 * Synthetic CT Generation via Variant Invertible Network for Brain PET Attenuation Correction [<font size=5>**[Paper]**</font>](https://ieeexplore.ieee.org/document/10666843) [<font size=5>**[Code]**</font>](https://github.com/yqx7150/PET_AC_sCT)
