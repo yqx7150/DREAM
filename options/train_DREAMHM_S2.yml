@@ -1,0 +1,141 @@
+# DREAM-HM -- stage 2 (diffusion stage + transformer stage, guided by the UCP)
+name: DREAMHM_S2
+model_type: DREAMHM_S2Model
+scale: 1
+num_gpu: auto
+manual_seed: 0
+
+datasets:
+  train:
+    name: TrainSet
+    type: SinoHeatMaskDataset
+    dataroot_GT: datasets/sinogram/train      # <- folder with the paired .mat sinograms
+    dataroot_LQ: datasets/sinogram/train      # unused, the pairs live in the same file
+    phase: train
+
+    hot_ratio: 0.1            # tau = P90 of the padded 256x256 block (~13% of the 192-column sinogram)
+    clean_channel: true       # [cold, hot, full] block (3 channels)
+    normalize: true
+    sino_h: 256
+    sino_w: 192
+    pad_w: 32
+
+    num_worker_per_gpu: 8
+    # progressive hierarchical masking: patches grow 64 -> 128 -> 192 -> 256
+    batch_size_per_gpu: 8
+    mini_batch_sizes: [8, 4, 2, 2]
+    iters: [120000, 100000, 100000, 80000]
+    gt_size: 256
+    gt_sizes: [64, 128, 192, 256]
+
+    use_shuffle: true
+    dataset_enlarge_ratio: 1
+    prefetch_mode: ~
+
+  val:
+    name: ValSet
+    type: SinoHeatMaskDataset
+    dataroot_GT: datasets/sinogram/val
+    dataroot_LQ: datasets/sinogram/val
+    hot_ratio: 0.1            # tau = P90 of the padded 256x256 block (~13% of the 192-column sinogram)
+    clean_channel: true
+    normalize: true
+
+network_g:
+  type: DREAMHM_S2
+  n_encoder_res: 5
+  inp_channels: 3
+  out_channels: 3
+  dim: 48
+  num_blocks: [3, 5, 6, 6]
+  num_refinement_blocks: 4
+  heads: [1, 2, 4, 8]
+  ffn_expansion_factor: 2
+  bias: false
+  LayerNorm_type: WithBias
+  n_denoise_res: 1
+  linear_start: 0.1
+  linear_end: 0.99
+  timesteps: 4              # number of diffusion steps T
+
+network_S1:
+  type: DREAMHM_S1
+  n_encoder_res: 5
+  inp_channels: 3
+  out_channels: 3
+  dim: 48
+  num_blocks: [3, 5, 6, 6]
+  num_refinement_blocks: 4
+  heads: [1, 2, 4, 8]
+  ffn_expansion_factor: 2
+  bias: false
+  LayerNorm_type: WithBias
+
+path:
+  # the generator of stage 2 is initialised from the stage-1 checkpoint
+  pretrain_network_g: experiments_sinogram/DREAMHM_S1/models/net_g_latest.pth
+  pretrain_network_S1: experiments_sinogram/DREAMHM_S1/models/net_g_latest.pth
+  param_key_g: params_ema
+  strict_load_g: false
+  resume_state: ~
+  ignore_resume_networks: network_S1
+
+train:
+  ema_decay: 0.999
+  optim_g:
+    type: Adam
+    lr: !!float 2e-4
+    weight_decay: 0
+    betas: [0.9, 0.99]
+  scheduler:
+    type: MultiStepLR
+    milestones: [300000]
+    gamma: 0.5
+
+  # the compact-prior network is fine-tuned with the knowledge-distillation loss
+  # during the first `encoder_iter` iterations, then the transformer stage is trained
+  encoder_iter: 100000
+  total_iter: 400000
+  lr_encoder: !!float 2e-4
+  lr_sr: !!float 2e-4
+  gamma_encoder: 0.1
+  gamma_sr: 0.5
+  lr_decay_encoder: 60000
+  lr_decay_sr: 80000
+  warmup_iter: -1
+
+  mixing_augs:
+    mixup: false
+    mixup_beta: 1.2
+    use_identity: true
+
+  pixel_opt:
+    type: L1Loss
+    loss_weight: 1.0
+    reduction: mean
+  kd_opt:
+    type: KDLoss
+    loss_weight: 1
+    temperature: 0.15
+
+val:
+  window_size: 8
+  val_freq: !!float 5e3
+  save_img: false
+  metrics:
+    psnr:
+      type: calculate_psnr
+      crop_border: 0
+      test_y_channel: false
+
+logger:
+  print_freq: 100
+  save_checkpoint_freq: !!float 1e4
+  use_tb_logger: true
+  wandb:
+    project: ~
+    resume_id: ~
+
+dist_params:
+  backend: nccl
+  port: 29500

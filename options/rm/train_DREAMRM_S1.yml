@@ -1,0 +1,107 @@
+# DREAM-RM -- stage 1 (random block masks instead of HCMM)
+name: DREAMRM_S1
+model_type: DREAMHM_S1Model
+scale: 1
+num_gpu: auto
+manual_seed: 0
+
+datasets:
+  train:
+    name: TrainSet
+    type: SinoRandomMaskDataset
+    dataroot_GT: datasets/sinogram/train
+    dataroot_LQ: datasets/sinogram/train
+    phase: train
+
+    # ---- random mask options ----------------------------------------------
+    num_masks: 2              # number of randomly masked channels
+    block_size: 16            # 16 x 16 blocks
+    mask_ratio: 0.1           # 10% of the spatial area is covered
+    normalize: true
+    sino_h: 256
+    sino_w: 192
+    pad_w: 32
+
+    num_worker_per_gpu: 8
+    batch_size_per_gpu: 2
+    mini_batch_sizes: [2]
+    iters: [400000]
+    gt_size: 256
+    gt_sizes: [256]
+
+    use_shuffle: true
+    dataset_enlarge_ratio: 1
+    prefetch_mode: ~
+
+  val:
+    name: ValSet
+    type: SinoRandomMaskDataset
+    dataroot_GT: datasets/sinogram/val
+    dataroot_LQ: datasets/sinogram/val
+    num_masks: 2
+    block_size: 16
+    mask_ratio: 0.1
+    normalize: true
+
+network_g:
+  type: DREAMHM_S1
+  n_encoder_res: 5
+  inp_channels: 3           # 2 masked channels + 1 data-fidelity channel
+  out_channels: 3
+  dim: 48
+  num_blocks: [3, 5, 6, 6]
+  num_refinement_blocks: 4
+  heads: [1, 2, 4, 8]
+  ffn_expansion_factor: 2
+  bias: false
+  LayerNorm_type: WithBias
+
+path:
+  pretrain_network_g: ~
+  param_key_g: params_ema
+  strict_load_g: true
+  resume_state: ~
+
+train:
+  ema_decay: 0.999
+  optim_g:
+    type: Adam
+    lr: !!float 2e-4
+    weight_decay: 0
+    betas: [0.9, 0.999]
+  scheduler:
+    type: CosineAnnealingRestartCyclicLR
+    periods: [120000, 280000]
+    restart_weights: [1, 1]
+    eta_mins: [0.000285, 0.000001]
+  total_iter: 400000
+  warmup_iter: -1
+  mixing_augs:
+    mixup: false
+    mixup_beta: 1.2
+    use_identity: true
+  pixel_opt:
+    type: L1Loss
+    loss_weight: 1.0
+    reduction: mean
+
+val:
+  val_freq: !!float 5e3
+  save_img: false
+  metrics:
+    psnr:
+      type: calculate_psnr
+      crop_border: 0
+      test_y_channel: false
+
+logger:
+  print_freq: 100
+  save_checkpoint_freq: !!float 1e4
+  use_tb_logger: true
+  wandb:
+    project: ~
+    resume_id: ~
+
+dist_params:
+  backend: nccl
+  port: 29500

@@ -1,0 +1,66 @@
+# DREAM-RM -- test / reconstruction
+name: DREAMRM_S2_test
+model_type: DREAMHM_S2Model
+scale: 1
+num_gpu: auto
+manual_seed: 0
+
+datasets:
+  test:
+    name: TestSet
+    type: SinoRandomMaskDataset
+    dataroot_GT: datasets/sinogram/test
+    dataroot_LQ: datasets/sinogram/test
+    num_masks: 2
+    block_size: 16
+    mask_ratio: 0.1
+    normalize: false
+    sino_h: 256
+    sino_w: 192
+    pad_w: 32
+
+network_g:
+  type: DREAMHM_S2
+  n_encoder_res: 5
+  inp_channels: 3
+  out_channels: 3
+  dim: 48
+  num_blocks: [3, 5, 6, 6]
+  num_refinement_blocks: 4
+  heads: [1, 2, 4, 8]
+  ffn_expansion_factor: 2
+  bias: false
+  LayerNorm_type: WithBias
+  n_denoise_res: 1
+  linear_start: 0.1
+  linear_end: 0.99
+  timesteps: 4
+
+network_S1:
+  type: DREAMHM_S1
+  n_encoder_res: 5
+  inp_channels: 3
+  out_channels: 3
+  dim: 48
+  num_blocks: [3, 5, 6, 6]
+  num_refinement_blocks: 4
+  heads: [1, 2, 4, 8]
+  ffn_expansion_factor: 2
+  bias: false
+  LayerNorm_type: WithBias
+
+path:
+  pretrain_network_g: experiments_sinogram/DREAMRM_S2/models/net_g_latest.pth
+  pretrain_network_S1: experiments_sinogram/DREAMRM_S1/models/net_g_latest.pth
+  param_key_g: params_ema
+  strict_load_g: false
+  ignore_resume_networks: network_S1
+
+val:
+  save_img: true
+  suffix: ~
+  metrics:
+    psnr:
+      type: calculate_psnr
+      crop_border: 0
+      test_y_channel: false

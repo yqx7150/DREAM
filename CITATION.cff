@@ -1,0 +1,40 @@
+cff-version: 1.2.0
+message: "If you use this code, please cite the paper below."
+title: DREAM-HM
+authors:
+  - family-names: Huang
+    given-names: Bin
+  - family-names: Chen
+    given-names: Yanhan
+  - family-names: He
+    given-names: Binzhong
+  - family-names: Liu
+    given-names: Zhili
+  - family-names: Wang
+    given-names: Xinyue
+  - family-names: Li
+    given-names: Binxuan
+  - family-names: Liu
+    given-names: Qiegen
+year: 2026
+license: MIT
+preferred-citation:
+  type: article
+  title: "Diffusion Transformer Meets Heat Masks: An Advanced PET Reconstruction Framework"
+  authors:
+    - family-names: Huang
+      given-names: Bin
+    - family-names: Chen
+      given-names: Yanhan
+    - family-names: He
+      given-names: Binzhong
+    - family-names: Liu
+      given-names: Zhili
+    - family-names: Wang
+      given-names: Xinyue
+    - family-names: Li
+      given-names: Binxuan
+    - family-names: Liu
+      given-names: Qiegen
+  journal: IEEE Transactions on Image Processing
+  year: 2026

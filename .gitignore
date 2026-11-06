@@ -1,0 +1,33 @@
+# data / checkpoints / logs
+weights/*
+!weights/README.md
+datasets/
+experiments_*/
+results_*/
+tb_logger/
+*.pth
+*.state
+*.log
+
+# python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+build/
+dist/
+.ipynb_checkpoints/
+venv/
+.venv/
+
+# matlab
+*.asv
+*.mexa64
+*.mexw64
+octave-workspace
+
+# editors / os
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
